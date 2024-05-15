@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.io import loadmat
-import matplotlib.pyplot as plt
 
 basefolder = ""
 scale_factor = 0.1
