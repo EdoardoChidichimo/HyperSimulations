@@ -1,5 +1,4 @@
 import numpy as np
-from numpy import arange
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
@@ -18,7 +17,7 @@ velocity = 1.65 # (Dumas e2012) or 6? (Axonal velocity)
 sfreq = 500.0 # sampling frequency
 n_times = 600.0  # total seconds
 total_samp = int(sfreq * n_times)
-times = arange(0, (n_times + 2), 1/sfreq) 
+times = np.arange(0, (n_times + 2), 1/sfreq) 
 n_ch_intra = 32
 n_ch_inter = 2 * n_ch_intra
 
