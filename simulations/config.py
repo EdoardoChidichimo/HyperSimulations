@@ -76,8 +76,7 @@ sensor_noise_dict = {'sensor_noise_low': 0.0,
                      'sensor_noise_med': 0.5,
                      'sensor_noise_hig': 1.0}
 
-modes = ['plv', 'ccorr', 'coh', 'imaginary_coh', 'envelope_corr', 'pow_corr']
-# modes = ['plv', 'pli', 'wpli', 'ccorr', 'coh', 'imaginary_coh', 'envelope_corr', 'pow_corr']
+modes = ['plv', 'pli', 'wpli', 'ccorr', 'coh', 'imaginary_coh', 'envelope_corr', 'pow_corr']
 
 freq_bands = {'Delta': [1, 4],
               'Theta': [4, 8],
