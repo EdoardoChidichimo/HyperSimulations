@@ -60,14 +60,14 @@ def source_simulation(cintra: float,
         input_spline = CubicHermiteSpline.from_data(times, input_data)
         DDE = jitcdde_input(kuramotos, n=n, input=input_spline, verbose=False)
         DDE.compile_C(simplify=False, do_cse=False, chunk_size=180)
-        DDE.set_integration_parameters(rtol=0, atol=1e-5)
+        DDE.set_integration_parameters(rtol=0, atol=1e-6)
         DDE.constant_past(random.uniform(0, 2 * pi, n), time=0.0)
         DDE.integrate_blindly(max(τ), 1)
         
         print(f'Iteration {it}, Cintra {cintra}, Cinter {cinter}, Phase Noise {phase_noise}, Freq std {freq_std} — SETUP COMPLETE in {ti.time()-t0:.1f}', flush=True)
 
         output = []
-        for time in np.arange(DDE.t, DDE.t + n_times*sfreq, 1):
+        for time in np.arange(DDE.t, DDE.t + n_times, 1/sfreq):
             output.append([*DDE.integrate(time) % (2 * pi)])
 
         phases = np.array(output)
