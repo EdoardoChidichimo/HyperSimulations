@@ -8,7 +8,6 @@ scale_factor = 0.1
 n = 180 # Inter-brain oscillators
 n_osc_intra = int(n / 2) # 90
 
-
 # Constants
 freq_mean = 40.0 # Gamma oscillations
 freq_std_factor = 8.0
@@ -29,6 +28,17 @@ w_d = np.block([[distance, np.zeros((n_osc_intra, n_osc_intra))],
                 [np.zeros((n_osc_intra, n_osc_intra)), distance]])
 τ = sfreq * w_d / velocity # Mean Delay = 22.82, Max Delay = 91.50
 
+motor = np.array([57, 58, # Postcentral
+                  59, 60, # Parietal Sup
+                  61, 62, # Parietal Inf
+                  67, 68, # Precuneus
+                  69, 70]) - 1 # Paracentral Lobule
+
+visual = np.array([43, 44, # Calcarine
+                   45, 46, # Cuneus
+                   49, 50, # Occipital Sup
+                   51, 52, # Occipital Mid
+                   53, 54]) - 1 # Occipital Inf
 
 passage_mat = loadmat("biosim_data/FinePassageTZ.mat")['passageFine'].T # 90, 15028
 head_model = loadmat("biosim_data/Passage.mat")['HeadModel'] 
@@ -81,7 +91,3 @@ freq_bands = {'Delta': [1, 4],
               'Alpha': [8, 12],
               'Beta': [15, 30],
               'Gamma': [32, 48]}
-
-# Define motor and visual areas of connectivity matrix
-motor = np.array([57, 58, 59, 60, 61, 62, 67, 68, 69, 70]) - 1 
-visual = np.array([43, 44, 45, 46, 49, 50, 51, 52, 53, 54]) - 1
