@@ -23,8 +23,11 @@ Specifying amp_noise and sensor_noise.
 3. **Calculating Connectivity Measures** 
 
    a. Calculate standard connectivity measures: PLV, PLI, wPLI, CCorr, COH, iCOH, envCorr, powCorr (*IB_standard_analysis.py*)
+   
    b. Calculate information-theoretic measures: Mutual Information with Histogram, Box Kernel, Gaussian, KSG, and Symbolic Estimators (*IB_infotheory_analysis.py*)
+   
    c. Calculate integrated-information-decomposition: Time-Delayed Mutual Information, Transfer Entropy, Pure Information Transfer, Redundancy, Synergy (*IB_phyid_analysis.py*)
+   
    d. Calculate state-space transfer entropy: Transfer Entropy using State-Space Modelling (*state_space_TE.m*)
 
-4. **Analysis** (*analysis.Rmd*)
+5. **Analysis** (*analysis.Rmd*)
