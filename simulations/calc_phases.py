@@ -31,8 +31,7 @@ def source_simulation(cintra: float,
     A = np.block([[intra_matrix, inter_matrix], [inter_matrix, intra_matrix]])
     ω = ((np.random.randn(1, n) * freq_std_factor * freq_std + freq_mean) * (2 * pi) / (sfreq)).flatten()
 
-    # for it in range(n_it): 
-    for it in range(n_it - 1, -1, -1):
+    for it in range(n_it): 
 
         file_path = f'phases/cintra_{cintra}_cinter_{cinter}_phase_noise_{phase_noise}_freq_std_{freq_std}/it_{it}.pickle'
 
