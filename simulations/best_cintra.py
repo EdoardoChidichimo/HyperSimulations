@@ -1,3 +1,16 @@
+#!/usr/bin/env python
+# coding=utf-8
+# ==============================================================================
+# title           : best_cintra.py
+# description     : Estimating brain connectivity with different Cintra values
+# author          : Edoardo Chidichimo, Guillaume Dumas
+# date            : 2024-06-04
+# version         : 0.1
+# usage           : python best_cintra.py
+# python_version  : >3.10
+# ==============================================================================
+
+
 import os
 import numpy as np
 from config import *
