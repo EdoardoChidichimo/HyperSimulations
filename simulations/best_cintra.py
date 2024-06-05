@@ -13,12 +13,8 @@ from joblib import Parallel, delayed
 from hyperit import HyperIT
 
 
-iterations = 20
-n_intra = 90
+def epoch_data(data: np.ndarray, epoch_length: int) -> np.ndarray:
 
-def epoch_data(data: np.ndarray):
-
-    epoch_length = 2
     n_channels, n_tot_samples = data.shape
     n_epo = int(np.floor((n_tot_samples)/(sfreq*epoch_length)))
     n_samples = int(sfreq * epoch_length)
@@ -31,21 +27,31 @@ def epoch_data(data: np.ndarray):
     
     return epoched_data
 
+def calc_gauss_mi(simulation: np.ndarray) -> np.ndarray:
+
+    HyperIT.setup_JVM()
+    itClass = HyperIT(simulation[:, :16, :], simulation[:, 16:, :], verbose=False, show_tqdm=False)
+    gauss_matrix = itClass.compute_mi(mode='gaussian', include_intra=True, epoch_average=True)
+
+    return gauss_matrix
+    
 
 def simulate_brain(cintra: float, 
                 phase_noise: float,
                 freq_std: float,
                 amp_noise: float,
                 sensor_noise: float):
-    
+
+    n_intra = 90
     A_intra = np.array(dti * cintra)
     ω_intra = ((np.random.randn(1, n_intra) * freq_std_factor * freq_std + freq_mean) * (2 * pi) / (sfreq)).flatten()
     τ_intra = sfreq * w_d / velocity
 
 
-    for it in range(iterations):
+    for it in range(n_it):
         np.random.seed(it)
 
+        # Our model of single-brain dynamics using Kuramoto model following stochastic delay differential equation
         def kuramotos():
             for i in range(n_intra):
                 yield ω_intra[i] + (sum(
@@ -61,6 +67,7 @@ def simulate_brain(cintra: float,
         DDE.constant_past(random.uniform(0, 2 * pi, n_intra), time=0.0)
         DDE.integrate_blindly(max(τ_intra), 1)
 
+        # Integrate right-side of equation to get instantaneous phase angle over time
         output = []
         for time in np.arange(DDE.t, n_times-DDE.t, 1/sfreq):
             output.append([*DDE.integrate(time) % (2 * pi)])
@@ -70,21 +77,21 @@ def simulate_brain(cintra: float,
         with open(f'best_cintra/phases/cintra_{cintra}_noise_{freq_std}_it_{it}.pkl', 'wb') as file:
             pickle.dump(phases, file) 
 
+        # Convert phases to timeseries signal
         phi = np.sin(2*pi*phases) + amp_noise * np.random.randn(*phases.shape)
 
+        # Forward modelling
         s1_eeg = np.matmul(phi.T, eeg_mat) / gain.shape[1]
         eeg = s1_eeg + sensor_noise * np.random.randn(*s1_eeg.shape) 
 
-        simulation = np.array(epoch_data(eeg.T)) * 10e-6
+        # Epoch the data in 2 second windows
+        simulation = np.array(epoch_data(eeg.T, 2)) * 10e-6
 
         with open(f'best_cintra/sim/cintra_{cintra}_noise_{freq_std}_it_{it}.pkl', 'wb') as file:
             pickle.dump(simulation, file)
 
-
         # Calculate the Gaussian MI Matrix
-        HyperIT.setup_JVM()
-        itClass = HyperIT(simulation[:, :16, :], simulation[:, 16:, :], verbose=False, show_tqdm=False)
-        gauss_matrix = itClass.compute_mi(mode='gaussian', include_intra=True, epoch_average=True) # shape (32,32)
+        gauss_matrix = calc_gauss_mi(simulation) # shape (32,32)
 
         with open(f'best_cintra/mi_results/cintra_{cintra}_noise_{noise}_it_{it}.pkl', 'wb') as file:
             pickle.dump(gauss_matrix, file)
@@ -92,11 +99,12 @@ def simulate_brain(cintra: float,
 def main():
 
     cintra_range = np.round(np.linspace(0.45, 0.70, 26) * scale_factor, 3)
-    combination = product(cintra_range, [0.0, 0.5, 1.0]) # 25 x 3 (none, mid, high for both phase_noise and freq_std) = 75 simulations
+    
+    # 26 x 3 (none, mid, high for phase_noise, freq_std, amp_noise, and sensor_noise) = 78 simulations
+    combination = product(cintra_range, [0.0, 0.5, 1.0]) 
     params = []
 
     for cintra, noise in combination:
-            
         params.append((cintra, noise*.1, noise, noise, noise))
 
     Parallel(n_jobs=30, backend="loky")(delayed(simulate_brain)(*p) for p in params)
