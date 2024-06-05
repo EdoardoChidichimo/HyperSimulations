@@ -7,14 +7,14 @@ A. **Brain Criticality Dynamics** (*order_param_cintra_criticality.py*)
 Plot criticality dynamics of Kuramoto model of simulated source signals. Varying $C_{\text{intra}}$ [0,1] in 50 steps, 20 iterations, and three noise conditions (none, medium, high).
 
 B. **Finding Best Cintra** (*best_cintra.py*, *mahalanobis_distance.py*)
-Calculating the Mahalanobis distance between the MI Gaussian connectivity matrices of various single-brain simulations (Cintra: 0.45–7, 25steps) and a real resting-state EEG dataset.
+Calculating the Mahalanobis distance between the MI Gaussian connectivity matrices of various single-brain simulations — $C_{\text{intra}}$ [0.45,7], 25steps — and real resting-state EEG datasets (Gifford, Pérez).
 
 
 ## Simulating Brain-to-Brain Interaction and Evaluating Various Connectivity Measures
 
 1. **Simulating source neural dynamics** (*calc_phases.py*)
 Calculate the phases of each oscillator (N=180) in a large Kuramoto model which follows stochastic delayed differential dynamics. 
-Specifying connectivity (cintra, cinter) and biological noise (phase_noise, freq_std).
+Specifying connectivity ($C_{\text{intra}}$, $C_{\text{inter}}$) and biological noise (phase_noise, freq_std).
 
 2. **Simulating EEG signals** (*eeg_simulations.py*)
 Convert all the phases into simulated EEG data using forward gain model (N=64).
