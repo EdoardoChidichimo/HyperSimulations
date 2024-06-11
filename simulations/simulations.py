@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+# coding=utf-8
+# ====================================================================================================
+# title           : simulations.py
+# description     : Simulate EEG-Hyperscanning Data using Kuramoto model with Forward Model + Noise!
+# author          : Edoardo Chidichimo, Guillaume Dumas
+# date            : 2024-11-01
+# version         : 0.1
+# usage           : python simulations.py
+# python_version  : >3.10
+# ====================================================================================================
+
 from config import *
 import pickle
 import mne
