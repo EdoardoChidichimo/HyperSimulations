@@ -12,22 +12,19 @@ B. **Finding Best Cintra** (*best_cintra.py*, *mahalanobis_distance.py*)
 
 ## Simulating Brain-to-Brain Interaction and Evaluating Various Connectivity Measures
 
-1. **Simulating source neural dynamics** (*calc_phases.py*)
+1. **Simulating source neural dynamics** (*simulations.py*)
 - Calculate the phases of each oscillator (N=180) in a large Kuramoto model which follows stochastic delayed differential dynamics. 
 - Specifying connectivity ($C_{\text{intra}}$, $C_{\text{inter}}$) and biological noise (phase_noise, freq_std).
-
-2. **Simulating EEG signals** (*eeg_simulations.py*)
 - Convert all the phases into simulated EEG data using forward gain model (N=64).
 - Specifying amp_noise and sensor_noise.
 
-3. **Calculating Connectivity Measures** 
+2. **Calculating Connectivity Measures** (*IB_analysis.py*)
 
-   a. Calculate Standard Connectivity Measures: PLV, PLI, wPLI, CCorr, COH, iCOH, envCorr, powCorr (*IB_standard_analysis.py*)
+   a. Calculate Standard Connectivity Measures: PLV, PLI, wPLI, CCorr, COH, iCOH, envCorr, and powCorr
    
-   b. Calculate Mutual Information with Histogram, Box Kernel, Gaussian, KSG, and Symbolic Estimators (*IB_infotheory_analysis.py*)
+   b. Calculate Mutual Information with Histogram, Box Kernel, Gaussian, KSG, and Symbolic Estimators 
    
-   c. Calculate Integrated Information Decomposition Measures: Time-Delayed Mutual Information, Transfer Entropy, Pure Information Transfer, Redundancy, Synergy (*IB_phyid_analysis.py*)
+   c. Calculate Integrated Information Decomposition Measures: Time-Delayed Mutual Information, Transfer Entropy, Pure Information Transfer, Redundancy, and Synergy 
    
-   d. Calculate State-Space Transfer Entropy/Granger Causality (*state_space_TE.m*)
 
-5. **Statistical Analysis** (*analysis.Rmd*)
+3. **Statistical Analysis** (*statistical_analysis.R*)
