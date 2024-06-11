@@ -13,16 +13,15 @@ B. **Finding Best Cintra** (*best_cintra.py*, *mahalanobis_distance.py*)
 ## Simulating Brain-to-Brain Interaction and Evaluating Various Connectivity Measures
 
 1. **Simulating source neural dynamics** (*simulations.py*)
-- Calculate the phases of each oscillator (N=180) in a large Kuramoto model which follows stochastic delayed differential dynamics. 
-- Specifying connectivity ($C_{\text{intra}}$, $C_{\text{inter}}$) and biological noise (phase_noise, freq_std).
+- Calculate the phases of each oscillator (N=180) in a large Kuramoto model which follows stochastic delayed differential dynamics.
 - Convert all the phases into simulated EEG data using forward gain model (N=64).
-- Specifying amp_noise and sensor_noise.
+- Plotting extensive parameter space, varying inter-brain connectivity ($C_{\text{inter}}$), biological noise (phase_noise, freq_std), and external/recording noise (amp_noise, sensor_noise).
 
 2. **Calculating Connectivity Measures** (*IB_analysis.py*)
 
    a. Calculate Standard Connectivity Measures: PLV, PLI, wPLI, CCorr, COH, iCOH, envCorr, and powCorr
    
-   b. Calculate Mutual Information with Histogram, Box Kernel, Gaussian, KSG, and Symbolic Estimators 
+   b. Calculate Mutual Information: Histogram, Box Kernel, Gaussian, KSG, and Symbolic Estimators 
    
    c. Calculate Integrated Information Decomposition Measures: Time-Delayed Mutual Information, Transfer Entropy, Pure Information Transfer, Redundancy, and Synergy 
    
