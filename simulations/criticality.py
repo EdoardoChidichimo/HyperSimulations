@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ==============================================================================
+# ====================================================================================================
 # title           : criticality.py
 # description     : Plot criticality dynamics for single-brain model (stochastic delay Kuramoto model)
 # author          : Edoardo Chidichimo
@@ -8,7 +8,7 @@
 # version         : 0.1
 # usage           : python criticality.py
 # python_version  : >3.10
-# ==============================================================================
+# ====================================================================================================
 
 
 import os
