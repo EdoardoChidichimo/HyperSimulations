@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+# coding=utf-8
+# =====================================================================================
+# title           : config.py
+# description     : Configuration file with all constants and general-purpose variables
+# author          : Guillaume Dumas, Edoardo Chidichimo
+# date            : 2024-11-01
+# version         : 0.1
+# usage           : NA
+# python_version  : >3.10
+# =====================================================================================
+
 import numpy as np
 from scipy.io import loadmat
 
