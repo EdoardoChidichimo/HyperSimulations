@@ -3,7 +3,7 @@ Simulating EEG hyperscanning data using coupled Kuramoto oscillators following s
 
 ## Preparation and Finding Best Biophysical Model of Single-Brain Dynamics 
 
-A. **Brain Criticality Dynamics** (*order_param_cintra_criticality.py*)
+A. **Brain Criticality Dynamics** (*criticality.py*)
 - Plot criticality dynamics of Kuramoto model of simulated source signals. Varying $C_{\text{intra}}$ [0,1] in 50 steps, 20 iterations, and three noise conditions (none, medium, high).
 
 B. **Finding Best Cintra** (*best_cintra.py*, *mahalanobis_distance.py*)
