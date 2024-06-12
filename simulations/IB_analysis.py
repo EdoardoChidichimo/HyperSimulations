@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ====================================================================================================
+# =================================================================================================
 # title           : IB_analysis.py
-# description     : Conduct Inter-Brain analysis on simulations w/ standard, MI, and phyid measures
+# description     : Conduct inter-brain analysis on simulations w/ standard, MI, and phyid measures
 # author          : Edoardo Chidichimo, Guillaume Dumas
 # date            : 2024-11-01
 # version         : 0.1
 # usage           : python IB_analysis.py
 # python_version  : >3.10
-# ====================================================================================================
+# =================================================================================================
 
 import os
 import numpy as np
