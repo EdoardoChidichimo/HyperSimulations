@@ -135,8 +135,11 @@ def main():
     calc_null = False # i.e., whether to shuffle epochs
 
     combination_values = product(cinter_dict.values(),
-                               [0.0, 0.5, 1.0],
-                                range(0,n_it)
+                                 phase_noise_dict.values(),
+                                 freq_std_dict.values(),
+                                 amp_noise_dict.values(),
+                                 sensor_noise_dict.values(),
+                                 range(0,n_it)
                                 )
     params = []
 
