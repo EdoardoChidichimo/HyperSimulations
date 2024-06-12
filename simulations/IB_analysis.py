@@ -120,7 +120,7 @@ def IB_analysis_main(cinter: float,
     elif analysis == "IB_phyid":
         IB_analysis_results = IB_analysis_phyid(simulation)
 
-    with open(f'simulations_0.53/results/{"null/" if calc_null else ""}{analysis}/cinter_{cinter}_phase_noise{phase_noise}_freq_std_{freq_std}_amp_noise_{amp_noise}_sensor_noise_{sensor_noise}_it_{it}.pkl', 'wb') as file:
+    with open(f'simulations_0.53/results/{"null/" if calc_null else ""}{analysis}/cinter_{cinter}_phase_noise_{phase_noise}_freq_std_{freq_std}_amp_noise_{amp_noise}_sensor_noise_{sensor_noise}_it_{it}.pkl', 'wb') as file:
         pickle.dump(IB_analysis_results, file)
 
 def main():
