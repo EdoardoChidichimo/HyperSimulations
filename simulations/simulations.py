@@ -39,7 +39,7 @@ def virtual_dyad_scalp(phi: np.ndarray, sensor_noise: float) -> np.ndarray:
 
     return eeg
 
-def epoch_data(data: np.ndarray):
+def epoch_data(data: np.ndarray) -> np.ndarray:
 
     epoch_length = 2
     n_channels, n_tot_samples = data.shape
@@ -56,9 +56,9 @@ def epoch_data(data: np.ndarray):
 
 
 def simulate(cintra: float,
-            cinter: float,
-            phase_noise: float, 
-            freq_std: float):
+             cinter: float,
+             phase_noise: float, 
+             freq_std: float) -> None:
 
     intra_matrix = dti * cintra
     inter_matrix = np.zeros((n_osc_intra, n_osc_intra))
@@ -71,9 +71,8 @@ def simulate(cintra: float,
     A = np.block([[intra_matrix, inter_matrix], [inter_matrix, intra_matrix]])
     ω = ((np.random.randn(1, n) * freq_std_factor * freq_std + freq_mean) * (2 * pi) / (sfreq)).flatten()
 
-    # for it in range(n_it): 
-    for it in range(n_it - 1, -1, -1):
-
+    for it in range(n_it): 
+        
         np.random.seed(it)
         file_path = f'simulations_0.53/phases/cinter_{cinter}_phase_noise_{phase_noise}_freq_std_{freq_std}/it_{it}.pickle'
 
@@ -106,42 +105,37 @@ def simulate(cintra: float,
         # Take only stable dynamics which are often the last 2 minutes of data
         phases = np.array(phases)[:,-int(120*sfreq):] # shape (180 osc, 60_000) 
 
-        # FOR EXTENSIVE PLOTTING:
-        # for amp_noise, sensor_noise in product([0.0,0.5,1.0], [0.0,0.5,1.0]):
+        for amp_noise, sensor_noise in product(amp_noise_dict.values(), sensor_noise_dict.values()):
 
-        # OTHERWISE, keep all noise parameters at the same level 
-        amp_noise = freq_std
-        sensor_noise = freq_std
-
-        phi = np.sin(2 * np.pi * phases) + amp_noise * np.random.randn(*phases.shape)
-        # (180 osc, 60_000)
-
-        hyper_eeg = virtual_dyad_scalp(phi=phi, sensor_noise=sensor_noise)
-        # (60_000, 64 chan)
-
-        simulation = np.array([epoch_data(hyper_eeg[:,:32].T), epoch_data(hyper_eeg[:,32:].T)]) * 10e-6
-        # (2 pp, 60 epochs, 32 channels, 1000 timepoints)
-
-
-        sim_config_directory = f'simulations_0.53/sim/cinter_{cinter}_phase_noise_{phase_noise}_freq_std_{freq_std}_amp_noise_{amp_noise}_sensor_noise_{sensor_noise}'
-        if not os.path.exists(sim_config_directory):
-            os.mkdir(sim_config_directory)
-
-        with open(os.path.join(sim_config_directory, f'it_{it}.pkl'), 'wb') as file:
-            pickle.dump(simulation, file)
+            phi = np.sin(2 * np.pi * phases) + amp_noise * np.random.randn(*phases.shape)
+            # (180 osc, 60_000)
+    
+            hyper_eeg = virtual_dyad_scalp(phi=phi, sensor_noise=sensor_noise)
+            # (60_000, 64 chan)
+    
+            simulation = np.array([epoch_data(hyper_eeg[:,:32].T), epoch_data(hyper_eeg[:,32:].T)]) * 10e-6
+            # (2 pp, 60 epochs, 32 channels, 1000 timepoints)
+    
+            sim_config_directory = f'simulations_0.53/sim/cinter_{cinter}_phase_noise_{phase_noise}_freq_std_{freq_std}_amp_noise_{amp_noise}_sensor_noise_{sensor_noise}'
+            if not os.path.exists(sim_config_directory):
+                os.mkdir(sim_config_directory)
+    
+            with open(os.path.join(sim_config_directory, f'it_{it}.pkl'), 'wb') as file:
+                pickle.dump(simulation, file)
 
 
 def main():
 
-    combination_values = product([0.0, 0.5, 1.0, 1.5, 2.0], # cinter
-                                 [0.0, 0.5, 1.0]) # noise
+    combination_values = product(cinter_dict.values(),
+                                 phase_noise_dict.values(),
+                                 sensor_noise_dict.values())
     cintra = 0.53 * scale_factor
     
     params = []
 
-    for cinter, noise in combination_values:
+    for cinter, phase_noise, sensor_noise in combination_values:
 
-        directory_name = f'simulations_0.53/phases/cinter_{cinter}_phase_noise_{noise*0.1}_freq_std_{noise}'
+        directory_name = f'simulations_0.53/phases/cinter_{cinter}_phase_noise_{phase_noise}_freq_std_{sensor_noise}'
 
         if not os.path.exists(directory_name):
             os.makedirs(directory_name)
@@ -149,7 +143,7 @@ def main():
         if len(os.listdir(directory_name)) == n_it:
             continue
 
-        params.append((cintra, cinter, noise*0.1, noise))
+        params.append((cintra, cinter, phase_noise, sensor_noise))
 
     Parallel(n_jobs=20, backend="loky")(delayed(simulate)(*p) for p in params)
 
