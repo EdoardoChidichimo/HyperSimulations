@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+# coding=utf-8
+# =================================================================================
+# title           : create_dataframe.py
+# description     : Store all results in a .csv file for later statistical analyses
+# author          : Edoardo Chidichimo, Guillaume Dumas
+# date            : 2024-11-01
+# version         : 0.1
+# usage           : python create_dataframe.py
+# python_version  : >3.10
+# =================================================================================
+
 import os
 from config import *
 from itertools import product
