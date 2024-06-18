@@ -62,8 +62,8 @@ for idx1, cluster1 in enumerate(all_clusters):
 
 mask = np.array([s for s in np.arange(32)])
 
-columns = ['cinter', 'phase_noise', 'freq_std', 'amp_noise', 'sensor_noise', 'iteration', 'brain12', 
-           'measure', 'freq_band', 'cluster', 'value_real', 'value_shuffled', 'diff']
+columns = ['cinter', 'phase_noise', 'freq_std', 'amp_noise', 'sensor_noise', 'iteration', 'measure', 'freq_band', 'cluster', 'brain12', 'value_real', 'value_shuffled', 'diff']
+
 accu = []
 
 
@@ -86,14 +86,14 @@ def add_results():
             mode_names = phyid_modes
             freq_filt = False
 
-        # REMINDER:
         # standard_modes = ['plv', 'pli', 'wpli', 'ccorr', 'coh', 'imaginary_coh', 'envelope_corr', 'pow_corr']
         # mi_modes = ['mi_histogram', 'mi_gaussian', 'mi_kernel', 'mi_ksg']
         # phyid_modes = ['phyid_tdmi', 'phyid_te', 'phyid_pure', 'phyid_redundancy', 'phyid_synergy']
 
         combination = product(cinter_dict.values(),
-                              [0.0,0.5,1.0]) # noise
+                              [0.0,0.5,1.0])
 
+        # for cintra, cinter, phase_noise, freq_std, amp_noise, sensor_noise, it in combination:
         for cinter, noise in combination:
 
             phase_noise = noise*0.1
@@ -105,8 +105,8 @@ def add_results():
 
                 filename = f'cinter_{cinter}_phase_noise{phase_noise}_freq_std_{freq_std}_amp_noise_{amp_noise}_sensor_noise_{sensor_noise}_it_{it}.pkl' # notice the accidental missing _ after phase_noise
 
-                full_file_h1 = os.path.join(f'simulations_0.53/results/IB_{directory}', filename)
-                full_file_h0 = os.path.join(f'simulations_0.53/results/null/IB_{directory}', filename)
+                full_file_h1 = os.path.join(f'simulations_0.53/results_4s/IB_{directory}', filename)
+                full_file_h0 = os.path.join(f'simulations_0.53/results_4s/null/IB_{directory}', filename)
 
                 with open(full_file_h1, 'rb') as f1:
                     results_h1 = pickle.load(f1) # shape (modes, freq_bands, 2*ch, 2*ch) or (modes, 2*ch, 2*ch)
@@ -141,7 +141,7 @@ def add_results():
                             accu.append([cinter, phase_noise, freq_std, amp_noise, sensor_noise, it, mode, freq_band, combo_label, 1, val_inter12_h1, val_inter12_h0, diff_12])
                             accu.append([cinter, phase_noise, freq_std, amp_noise, sensor_noise, it, mode, freq_band, combo_label, 0, val_inter21_h1, val_inter21_h0, diff_21])
 
-    pd.DataFrame(data=accu, columns=columns).to_csv(f'simulations_0.53/results/analysis/summary.csv')
+    pd.DataFrame(data=accu, columns=columns).to_csv(f'simulations_0.53/results_4s/analysis/summary.csv')
 
 if __name__ == "__main__":
     add_results()
