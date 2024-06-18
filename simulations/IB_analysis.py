@@ -27,7 +27,7 @@ mne.set_log_level(verbose=False)
 
 def shuffle_epochs(data: np.ndarray):
 
-    # data has shape (2 participants, 60 epochs, 32 channels, 1000 timepoints)
+    # data has shape (2 participants, 30 epochs, 32 channels, 2000 timepoints)
     for participant in range(data.shape[0]):
         np.random.shuffle(data[participant])
     
@@ -108,7 +108,7 @@ def IB_analysis_main(cinter: float,
         return
 
     with open(sim_file_path, 'rb') as file:
-        simulation = np.array(pickle.load(file)) # shape (2, 60, 32, 1000)
+        simulation = np.array(pickle.load(file)) # shape (2, 30, 32, 2000)
 
     if calc_null:
         simulation = shuffle_epochs(simulation)
