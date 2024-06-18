@@ -41,7 +41,7 @@ def virtual_dyad_scalp(phi: np.ndarray, sensor_noise: float) -> np.ndarray:
 
 def epoch_data(data: np.ndarray) -> np.ndarray:
 
-    epoch_length = 2
+    epoch_length = 4 # seconds
     n_channels, n_tot_samples = data.shape
     n_epo = int(np.floor((n_tot_samples)/(sfreq*epoch_length)))
     n_samples = int(sfreq * epoch_length)
@@ -114,7 +114,7 @@ def simulate(cintra: float,
             # (60_000, 64 chan)
     
             simulation = np.array([epoch_data(hyper_eeg[:,:32].T), epoch_data(hyper_eeg[:,32:].T)]) * 10e-6
-            # (2 pp, 60 epochs, 32 channels, 1000 timepoints)
+            # (2 pp, 30 epochs, 32 channels, 2000 timepoints)
     
             sim_config_directory = f'simulations_0.53/sim/cinter_{cinter}_phase_noise_{phase_noise}_freq_std_{freq_std}_amp_noise_{amp_noise}_sensor_noise_{sensor_noise}'
             if not os.path.exists(sim_config_directory):
