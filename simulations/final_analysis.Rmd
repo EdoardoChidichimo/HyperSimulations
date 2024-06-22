@@ -1,0 +1,314 @@
+---
+title: "Untitled"
+output: html_document
+runtime: shiny
+---
+```{r}
+# set seed for reproducibility and load libraries
+set.seed(42)
+
+library(dplyr)
+library(lsr)
+library(tidyverse)
+library(ROCR)
+library(ggstatsplot)
+```
+```{r}
+# load data and generate different dataframes that will be needed for analysis
+results <- read.csv("simulations_final_summary.csv", header = TRUE)
+subset_inter <- subset(x = results, subset = brain1 == 1 & brain2 == 2)
+
+# should we not just look at when cintra=0.5?
+
+```
+
+```{r}
+# generate subsets only with cinter 'no' and 'high' for ROC analysis
+
+plv_inter_roc <- subset(x = subset_inter, subset = cinter != 1 & measure == "plv")
+pli_inter_roc <- subset(x = subset_inter, subset = cinter != 1 & measure == "pli")
+wpli_inter_roc <- subset(x = subset_inter, subset = cinter != 1 & measure == "wpli")
+ccorr_inter_roc <- subset(x = subset_inter, subset = cinter != 1 & measure == "ccorr")
+coh_inter_roc <- subset(x = subset_inter, subset = cinter != 1 & measure == "coh")
+imaginary_coh_inter_roc <- subset(x = subset_inter, subset = cinter != 1 & measure == "imaginary_coh")
+envelope_corr_inter_roc <- subset(x = subset_inter, subset = cinter != 1 & measure == "envelope_corr")
+pow_corr_inter_roc <- subset(x=subset_inter, subset = cinter != 1 & measure == "pow_corr")
+```
+
+```{r}
+# measure subsets for when cinter is present (only brain1->brain2)
+
+subset_coupled <- subset(x=subset_inter, subset=cinter!=0.0)
+coupled_plv = subset(x=subset_coupled, subset=measure=="plv")
+coupled_pli = subset(x=subset_coupled, subset=measure=="pli")
+coupled_wpli = subset(x=subset_coupled, subset=measure=="wpli")
+coupled_ccorr = subset(x=subset_coupled, subset=measure=="ccorr")
+coupled_coh = subset(x=subset_coupled, subset=measure=="coh")
+coupled_imaginary_coh = subset(x=subset_coupled, subset=measure == "imaginary_coh")
+coupled_envelope_corr = subset(x=subset_coupled, subset=measure == "envelope_corr")
+coupled_pow_corr = subset(x=subset_coupled, subset=measure=="pow_corr")
+
+```
+
+```{r}
+
+# generate subsets per value
+
+inter_plv = subset(x=subset_inter, subset = measure == "plv")
+inter_pli = subset(x=subset_inter, subset = measure == "pli")
+inter_wpli = subset(x=subset_inter, subset = measure == "wpli")
+inter_ccorr = subset(x=subset_inter, subset = measure == "ccorr")
+inter_coh = subset(x=subset_inter, subset = measure == "coh")
+inter_imaginary_coh = subset(x=subset_inter, subset = measure == "imaginary_coh")
+inter_envelope_corr = subset(x=subset_inter, subset = measure == "envelope_corr")
+inter_pow_corr = subset(x=subset_inter, subset = measure == "pow_corr")
+
+```
+```{r}
+
+# generate subsets with no, medium or high noise (freq_std, phase_noise, amp_noise, sensor_noise)
+
+subset_inter_no_noise = subset(x=subset_inter, subset = phase_noise == 0.0 & freq_std == 0.0 & amp_noise == 0.0 & sensor_noise == 0.0)
+subset_inter_med_noise = subset(x=subset_inter, subset = phase_noise == 0.05 & freq_std == 0.5 & amp_noise == 0.5 & sensor_noise == 0.5)
+subset_inter_high_noise = subset(x=subset_inter, subset = phase_noise == 0.1 & freq_std == 1.0 & amp_noise == 1.0 & sensor_noise == 1.0)
+```
+```{r}
+# Relative performance ROC and AUC
+
+# function to compute rocr outputs
+
+ROCR.measures <- function(df) {
+    pred <- prediction(df$value, df$cinter)
+    roc <- performance(pred, measure = "tpr", x.measure = "fpr")
+    sens_spec <- performance(pred, measure = "sens", x.measure = "spec") #tpr, tnr
+    acc_perf <- performance(pred, measure = "acc")
+    ind <- which.max( slot(acc_perf, "y.values")[[1]] )
+    acc <- slot(acc_perf, "y.values")[[1]][ind]
+    acc_cutoff <- slot(acc_perf, "x.values")[[1]][ind]
+    auc <- performance(pred, measure = "auc")
+    auc <- auc@y.values
+    rmse <- performance(pred, measure = "rmse")
+    rmse <- rmse@y.values
+    list(roc, sens_spec, acc_perf, acc, acc_cutoff, auc, rmse)
+}
+
+# call function with all measures
+rocr_plv <- ROCR.measures(plv_inter_roc)
+rocr_pli <- ROCR.measures(pli_inter_roc)
+rocr_wpli <- ROCR.measures(wpli_inter_roc)
+rocr_ccorr <- ROCR.measures(ccorr_inter_roc)
+rocr_coh <- ROCR.measures(coh_inter_roc)
+rocr_imaginary_coh <- ROCR.measures(imaginary_coh_inter_roc)
+rocr_envelope_corr <- ROCR.measures(envelope_corr_inter_roc)
+rocr_pow_corr <- ROCR.measures(pow_corr_inter_roc)
+
+# Save ROC results into a list for plotting
+list_allrocr <- list(rocr_plv, rocr_pli, rocr_wpli, rocr_ccorr, rocr_coh, rocr_imaginary_coh, rocr_envelope_corr, rocr_pow_corr)
+
+# Set colours
+c1 <- "#D55E00"  # reddish-orange
+c2 <- "#CC79A7"  # pinkish-purple
+c3 <- "#E69F00"  # mustard yellow
+c4 <- "#56B4E9"  # light blue
+c5 <- "#0072B2"  # dark blue
+c6 <- "#009E73"  # green
+c7 <- "#9467BD"  # medium purple
+c8 <- "#8C564B"  # medium brownish-teal
+
+# Plot ROC curves
+plot(list_allrocr[[1]][[1]], col=c1, lwd=1, main="ROC Curves") 
+plot(list_allrocr[[2]][[1]], add=TRUE, col=c2, lwd=1)
+plot(list_allrocr[[3]][[1]], add=TRUE, col=c3, lwd=1)
+plot(list_allrocr[[4]][[1]], add=TRUE, col=c4, lwd=1)
+plot(list_allrocr[[5]][[1]], add=TRUE, col=c5, lwd=1)
+plot(list_allrocr[[6]][[1]], add=TRUE, col=c6, lwd=1)
+plot(list_allrocr[[7]][[1]], add=TRUE, col=c7, lwd=1)
+plot(list_allrocr[[8]][[1]], add=TRUE, col=c8, lwd=1)
+abline(a=0, b=1, lty=2, lwd=0.5)
+legend("topleft", legend=c("PLV", "PLI", "wPLI", "CCorr", "COH", "iCOH", "envCorr", "powCorr"), col=c(c1, c2, c3, c4, c5, c6, c7, c8), lty=1, cex=0.8)
+```
+```{r}
+# plot rocs seperately
+
+plot((list_allrocr[[1]][[1]]), col =c1, lwd=1, main= "PLV")
+abline(a=0, b=1, lty=3, lwd=0.5)
+legend("bottomright",legend=c("AUC=",list_allrocr[[1]][[8]]))
+plot((list_allrocr[[1]][[1]]), col =c2, lwd=1, main= "PLI")
+abline(a=0, b=1, lty=3, lwd=0.5)
+legend("bottomright",legend=c("AUC=",list_allrocr[[2]][[8]]))
+plot((list_allrocr[[1]][[1]]), col =c2, lwd=1, main= "wPLI")
+abline(a=0, b=1, lty=3, lwd=0.5)
+legend("bottomright",legend=c("AUC=",list_allrocr[[3]][[8]]))
+plot(list_allrocr[[2]][[1]], col = c2, lwd=1, main="CCorr")
+abline(a=0, b=1, lty=3, lwd=0.5)
+legend("bottomright",legend=c('AUC=',list_allrocr[[4]][[8]]))
+plot(list_allrocr[[3]][[1]], col = c3, lwd=1, main="COH")
+abline(a=0, b=1, lty=3, lwd=0.5)
+legend("bottomright",legend=c("AUC=",list_allrocr[[5]][[8]]))
+plot(list_allrocr[[4]][[1]], col = c4,lwd=1, main="iCOH")
+abline(a=0, b=1, lty=3, lwd=0.5)
+legend("bottomright",legend=c("AUC=", list_allrocr[[6]][[8]]))
+plot(list_allrocr[[5]][[1]], col = c5,lwd=1, main="envCorr")
+abline(a=0, b=1, lty=3, lwd=0.5)
+legend("bottomright",legend=c("AUC=",list_allrocr[[7]][[8]]))
+plot(list_allrocr[[6]][[1]], col = c6,lwd=1, main="powCorr")
+abline(a=0, b=1, lty=3, lwd=0.5)
+legend("bottomright",legend=c("AUC=",list_allrocr[[8]][[8]]))
+
+```
+
+```{r}
+
+# Multiple linear regression: Assessing the impact of different predictors on value
+lm_results <- lm(value ~ freq_std + phase_noise + amp_noise + sensor_noise + cluster, data = subset(results, brain1 == 1 & brain2 == 2))
+summary(lm_results)
+
+```
+
+
+```{r}
+# cinter on IBS no, med, high noise
+
+plot_no_noise <- ggbetweenstats(
+  data  = subset_inter_no_noise,
+  x     = cinter,
+  y     = value,
+  plot.type = "box",
+  effsize.type = "eta",
+  title = "IBS NO NOISE",
+  results.subtitle = TRUE
+)
+
+plot_med_noise <- ggbetweenstats(
+  data  = subset_inter_med_noise,
+  x     = cinter,
+  y     = value,
+  plot.type = "box",
+  effsize.type = "eta",
+  title = "IBS MED NOISE",
+  results.subtitle = TRUE
+)
+
+plot_high_noise <- ggbetweenstats(
+  data  = subset_inter_high_noise,
+  x     = cinter,
+  y     = value,
+  plot.type = "box",
+  effsize.type = "eta",
+  title = "IBS HIGH NOISE",
+  results.subtitle = TRUE
+)
+
+ggsave("standard_results/IBS_NO_NOISE.png", plot = plot_no_noise, width = 8, height = 6)
+ggsave("standard_results/IBS_MED_NOISE.png", plot = plot_med_noise, width = 8, height = 6)
+ggsave("standard_results/IBS_HIGH_NOISE.png", plot = plot_high_noise, width = 8, height = 6)
+
+stats_no_noise <- plot_no_noise$results
+stats_med_noise <- plot_med_noise$results
+stats_high_noise <- plot_high_noise$results
+
+print(stats_no_noise)
+print(stats_med_noise)
+print(stats_high_noise)
+
+write.table(stats_no_noise, "standard_results/IBS_NO_NOISE_stats.txt", sep = "\t", row.names = FALSE)
+write.table(stats_med_noise, "standard_results/IBS_MED_NOISE_stats.txt", sep = "\t", row.names = FALSE)
+write.table(stats_high_noise, "standard_results/IBS_HIGH_NOISE_stats.txt", sep = "\t", row.names = FALSE)
+
+```
+
+
+```{r}
+# cinter on IBS all measures
+
+create_and_save_plot <- function(data, x, y, plot_type, effsize_type, title, filename, stats_filename) {
+  plot <- ggbetweenstats(
+    data = data,
+    x = x,
+    y = y,
+    plot.type = plot_type,
+    effsize.type = effsize_type,
+    title = title,
+    results.subtitle = TRUE
+  )
+  
+  # Save the plot
+  ggsave(filename, plot = plot, width = 8, height = 6)
+  
+  # Extract statistics as text
+  stats <- plot$results
+  
+  # Save statistics to text file
+  write.table(stats, stats_filename, sep = "\t", row.names = FALSE)
+}
+
+# Create and save plots, and extract stats
+create_and_save_plot(inter_plv, "cinter", "value", "box", "eta", "IBS PLV", "standard_results/IBS_PLV.png", "standard_results/IBS_PLV_stats.txt")
+create_and_save_plot(inter_pli, "cinter", "value", "box", "eta", "IBS PLI", "standard_results/IBS_PLI.png", "standard_results/IBS_PLI_stats.txt")
+create_and_save_plot(inter_wpli, "cinter", "value", "box", "eta", "IBS wPLI", "standard_results/IBS_wPLI.png", "standard_results/IBS_wPLI_stats.txt")
+create_and_save_plot(inter_ccorr, "cinter", "value", "box", "eta", "IBS Circular Correlation", "standard_results/IBS_Circular_Correlation.png", "standard_results/IBS_Circular_Correlation_stats.txt")
+create_and_save_plot(inter_coh, "cinter", "value", "box", "eta", "IBS Coherence", "standard_results/IBS_Coherence.png", "standard_results/IBS_Coherence_stats.txt")
+create_and_save_plot(inter_imaginary_coh, "cinter", "value", "box", "eta", "IBS Imaginary Coherence", "standard_results/IBS_Imaginary_Coherence.png", "standard_results/IBS_Imaginary_Coherence_stats.txt")
+create_and_save_plot(inter_envelope_corr, "cinter", "value", "box", "eta", "IBS Envelope correlation", "standard_results/IBS_Envelope_correlation.png", "standard_results/IBS_Envelope_correlation_stats.txt")
+create_and_save_plot(inter_pow_corr, "cinter", "value", "box", "eta", "IBS Power Correlation", "standard_results/IBS_Power_Correlation.png", "standard_results/IBS_Power_Correlation_stats.txt")
+
+```
+
+
+```{r}
+# Clusters 
+
+cluster_aov <- aov(value ~ cluster, data = subset_coupled)
+summary(cluster_aov)
+
+cluster_coupled_plv <- aov(value ~ cluster, data = coupled_plv)
+summary(cluster_coupled_plv)
+
+cluster_coupled_pli <- aov(value ~ cluster, data = coupled_pli)
+summary(cluster_coupled_pli)
+
+cluster_coupled_wpli <- aov(value ~ cluster, data = coupled_wpli)
+summary(cluster_coupled_wpli)
+
+cluster_coupled_ccorr <- aov(value ~ cluster, data = coupled_ccorr)
+summary(cluster_coupled_ccorr)
+
+cluster_coupled_coh <- aov(value ~ cluster, data = coupled_coh)
+summary(cluster_coupled_coh)
+
+cluster_coupled_imaginary_coh <- aov(value ~ cluster, data = coupled_imaginary_coh)
+summary(cluster_coupled_imaginary_coh)
+
+cluster_coupled_envelope_corr <- aov(value ~ cluster, data = coupled_envelope_corr)
+summary(cluster_coupled_envelope_corr)
+
+cluster_coupled_pow_corr <- aov(value ~ cluster, data = coupled_pow_corr)
+summary(cluster_coupled_pow_corr)
+```
+
+
+
+
+```{r}
+# anovas
+perform_anova_and_save <- function(data, formula, filename) {
+  res.aov <- aov(formula, data = data)
+  summary_res <- summary(res.aov)
+  
+  # Capture the summary output
+  summary_text <- capture.output(summary_res)
+  
+  # Write the summary output to a file
+  writeLines(summary_text, filename)
+}
+
+# Perform ANOVA, summarize results, and save to files
+perform_anova_and_save(inter_plv, value ~ cintra * cinter * phase_noise * freq_std * amp_noise * sensor_noise, "anova_results/IBS_PLV_ANOVA.txt")
+perform_anova_and_save(inter_pli, value ~ cintra * cinter * phase_noise * freq_std * amp_noise * sensor_noise, "anova_results/IBS_PLI_ANOVA.txt")
+perform_anova_and_save(inter_wpli, value ~ cintra * cinter * phase_noise * freq_std * amp_noise * sensor_noise, "anova_results/IBS_wPLI_ANOVA.txt")
+perform_anova_and_save(inter_ccorr, value ~ cintra * cinter * phase_noise * freq_std * amp_noise * sensor_noise, "anova_results/IBS_Circular_Correlation_ANOVA.txt")
+perform_anova_and_save(inter_coh, value ~ cintra * cinter * phase_noise * freq_std * amp_noise * sensor_noise, "anova_results/IBS_Coherence_ANOVA.txt")
+perform_anova_and_save(inter_imaginary_coh, value ~ cintra * cinter * phase_noise * freq_std * amp_noise * sensor_noise, "anova_results/IBS_Imaginary_Coherence_ANOVA.txt")
+perform_anova_and_save(inter_envelope_corr, value ~ cintra * cinter * phase_noise * freq_std * amp_noise * sensor_noise, "anova_results/IBS_Envelope_correlation_ANOVA.txt")
+perform_anova_and_save(inter_pow_corr, value ~ cintra * cinter * phase_noise * freq_std * amp_noise * sensor_noise, "anova_results/IBS_Power_Correlation_ANOVA.txt")
+```
