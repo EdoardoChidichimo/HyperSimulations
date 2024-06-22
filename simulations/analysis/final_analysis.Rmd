@@ -1,6 +1,5 @@
 ---
-title: "Untitled"
-output: html_document
+title: "Simulations Analysis"
 runtime: shiny
 ---
 ```{r}
