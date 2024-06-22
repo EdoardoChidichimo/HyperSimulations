@@ -1,0 +1,352 @@
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(ggrain)
+library(emmeans)
+library(ggpubr)
+
+df <- read.csv('summary_4s.csv', stringsAsFactors = T, row.names = 1)
+```
+
+```{r}
+# compute difference between simulated and measures
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+standard_measures <- c("plv", "pli", "wpli", "ccorr", "coh", "imaginary_coh", "envelope_corr", "pow_corr")
+mi_measures <- c("mi_histogram", "mi_gaussian", "mi_kernel", "mi_ksg", "mi_symbolic")
+phyid_measures <- c("phyid_tdmi", "phyid_te", "phyid_pure", "phyid_redundancy", "phyid_synergy")
+all_measures <- c("plv", "pli", "wpli", "ccorr", "coh", "imaginary_coh", "envelope_corr", "pow_corr", "mi_histogram", "mi_gaussian", "mi_kernel", "mi_ksg", "mi_symbolic", "phyid_tdmi", "phyid_te", "phyid_pure", "phyid_redundancy", "phyid_synergy")
+
+# Apply normalization to value for unbounded measures
+df <- df %>%
+  group_by(measure) %>%
+  mutate(value = if_else(measure %in% all_measures, normalize(value), value)) %>%
+  ungroup()
+
+df$cinter <- case_when(
+  df$cinter == 0.0 ~ 0.0,
+  df$cinter == 0.5 ~ 0.25,
+  df$cinter == 1.0 ~ 0.5,
+  df$cinter == 1.5 ~ 0.75,
+  df$cinter == 2.0 ~ 1.0,
+  TRUE ~ df$cinter  # Keep the value unchanged if it doesn't match any case
+)
+# Small constant to avoid division by zero
+epsilon <- .Machine$double.eps
+
+# Compute difference between simulated and measures
+df$diff <- (df$cinter - df$value) / (df$cinter + df$value + epsilon)
+
+# df2 <- droplevels(df[df$freq_band == "Broadband" & df$measure %in% standard_measures, ])
+df2 <- droplevels(df[df$freq_band == "Broadband" & df$freq_std == 1.0, ])
+df2$measure <- factor(df2$measure, levels = all_measures)
+
+colnames(df2) <- c("cinter","phase_noise","freq_std","amp_noise","sensor_noise","iteration","measure","freq_band",
+                   "cluster","brain12","value", "diff")
+
+
+plotlist <- list()
+plotlist2 <- list()
+pairlist <- list()
+lmlist <- list()
+```
+
+```{r}
+anova_results <- list()
+posthoc_results <- list()
+
+for(measure in unique(df2$measure)) {
+  data <- df2 %>% filter(measure == measure)
+  
+  # Check if data is correctly filtered
+  if(nrow(data) == 0) next
+  
+  # ANOVA
+  anova_model <- aov(value ~ as.factor(cinter), data = data)
+  anova_results[[measure]] <- summary(anova_model)
+  
+  # Post-hoc test
+  posthoc_model <- emmeans(anova_model, ~ as.factor(cinter))
+  posthoc_results[[measure]] <- pairs(posthoc_model, adjust = "tukey")
+}
+
+# Print ANOVA results
+for(measure in names(anova_results)) {
+  cat("ANOVA results for measure:", measure, "\n")
+  print(anova_results[[measure]])
+  cat("\n")
+}
+
+# Print post-hoc test results
+for(measure in names(posthoc_results)) {
+  cat("Post-hoc test results for measure:", measure, "\n")
+  print(posthoc_results[[measure]])
+  cat("\n")
+}
+```
+
+```{r}
+
+for(measure in all_measures) {
+  data <- df2 %>% filter(measure == measure)
+  
+  # Check if data is correctly filtered
+  if(nrow(data) == 0) next
+  
+  p <- ggplot(data, aes(x = as.factor(cinter), y = value, fill = as.factor(cinter))) +
+    geom_boxplot() +
+    theme_minimal() +
+    ggtitle(paste("Boxplot for measure:", measure)) +
+    xlab("cinter levels") +
+    ylab("value")
+  
+  print(p)
+}
+
+```
+
+```{r}
+library(MASS)
+
+lda_results <- list()
+
+for(measure in unique(df2$measure)) {
+  data <- df2 %>% filter(measure == measure)
+  
+  # Check if data is correctly filtered
+  if(nrow(data) == 0) next
+  
+  # LDA
+  lda_model <- lda(as.factor(cinter) ~ value, data = data)
+  lda_results[[measure]] <- lda_model
+  
+  # Print LDA results
+  cat("LDA results for measure:", measure, "\n")
+  print(lda_model)
+  cat("\n")
+}
+
+```
+
+```{r}
+for(c in unique(df2$cluster)){
+  
+  data <- df2[df2$cluster == c,]
+  
+  # Plot an overview
+  plotlist[[c]] <- ggplot(data, aes(measure, diff, fill = measure)) +
+    geom_rain() + theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+          legend.position = "none")
+  
+  test <- aov(diff ~ measure, data = data)
+  lmlist[[c]] <- summary(test)
+  
+  fit2.emm.a <- emmeans(test, "measure", data=data)
+  test_out <- as.data.frame(pairs(fit2.emm.a, adjust="tukey"))
+  test_out$pair <- c
+  
+  medians <- data %>%
+    group_by(measure) %>%
+    summarize(median_response = median(diff))
+  
+  emm_df <- as.data.frame(fit2.emm.a)
+  emm_with_medians <- merge(emm_df, medians, by = "measure")
+  
+  pairwise_with_medians <- test_out %>%
+    mutate(
+      median1 = medians$median_response[match(gsub("measure ", "", contrast), medians$measure)],
+      median2 = medians$median_response[match(gsub("measure ", "", gsub(".*- ", "", contrast)), medians$measure)]
+    )
+  
+  pairlist[[c]] <- test_out
+  # Plot the pairwise comparisons
+  plot(fit2.emm.a, comparisons = TRUE)
+}
+```
+
+```{r}
+#combine
+pairs <- dplyr::bind_rows(pairlist)
+#correct pvalue for multiple testing
+pairs$fdr <- p.adjust(pairs$p.value,method = "bonferroni")
+#retain only those that are significant
+pairss <- pairs[pairs$fdr < 0.01,]
+```
+
+```{r}
+#plot a random cluster
+plotlist[["POL-POL"]]
+```
+
+
+
+
+
+
+```{r}
+library(dplyr)
+library(lsr)
+library(tidyverse)
+library(ROCR)
+library(ggstatsplot)
+
+# Subset the dataframe for plv measure and cinter values 0.0 or 2.0
+plv_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "plv")
+pli_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "pli")
+wpli_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "wpli")
+ccorr_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "ccorr")
+coh_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "coh")
+imaginary_coh_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "imaginary_coh")
+envelope_corr_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "envelope_corr")
+pow_corr_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "pow_corr")
+
+ROCR.measures <- function(df) {
+    pred <- prediction(df$value, df$cinter)
+    roc <- performance(pred, measure = "tpr", x.measure = "fpr")
+    sens_spec <- performance(pred, measure = "sens", x.measure = "spec") #tpr, tnr
+    acc_perf <- performance(pred, measure = "acc")
+    ind <- which.max( slot(acc_perf, "y.values")[[1]] )
+    acc <- slot(acc_perf, "y.values")[[1]][ind]
+    acc_cutoff <- slot(acc_perf, "x.values")[[1]][ind]
+    auc <- performance(pred, measure = "auc")
+    auc <- auc@y.values
+    rmse <- performance(pred, measure = "rmse")
+    rmse <- rmse@y.values
+    list(roc, sens_spec, acc_perf, acc, acc_cutoff, auc, rmse)
+}
+
+# call function with all measures
+rocr_plv <- ROCR.measures(plv_inter_roc)
+rocr_pli <- ROCR.measures(pli_inter_roc)
+rocr_wpli <- ROCR.measures(wpli_inter_roc)
+rocr_ccorr <- ROCR.measures(ccorr_inter_roc)
+rocr_coh <- ROCR.measures(coh_inter_roc)
+rocr_imaginary_coh <- ROCR.measures(imaginary_coh_inter_roc)
+rocr_envelope_corr <- ROCR.measures(envelope_corr_inter_roc)
+rocr_pow_corr <- ROCR.measures(pow_corr_inter_roc)
+
+# Save ROC results into a list for plotting
+list_allrocr <- list(rocr_plv, rocr_pli, rocr_wpli, rocr_ccorr, rocr_coh, rocr_imaginary_coh, rocr_envelope_corr, rocr_pow_corr)
+
+# Set colours
+c1 <- "#D55E00"  # reddish-orange
+c2 <- "#CC79A7"  # pinkish-purple
+c3 <- "#E69F00"  # mustard yellow
+c4 <- "#56B4E9"  # light blue
+c5 <- "#0072B2"  # dark blue
+c6 <- "#009E73"  # green
+c7 <- "#9467BD"  # medium purple
+c8 <- "#8C564B"  # medium brownish-teal
+
+# Plot ROC curves
+plot(list_allrocr[[1]][[1]], col=c1, lwd=1, main="Standard Connectivity Measures ROC Curves", xlim=c(0, 1), ylim=c(0, 1)) 
+plot(list_allrocr[[2]][[1]], add=TRUE, col=c2, lwd=1)
+plot(list_allrocr[[3]][[1]], add=TRUE, col=c3, lwd=1)
+plot(list_allrocr[[4]][[1]], add=TRUE, col=c4, lwd=1)
+plot(list_allrocr[[5]][[1]], add=TRUE, col=c5, lwd=1)
+plot(list_allrocr[[6]][[1]], add=TRUE, col=c6, lwd=1)
+plot(list_allrocr[[7]][[1]], add=TRUE, col=c7, lwd=1)
+plot(list_allrocr[[8]][[1]], add=TRUE, col=c8, lwd=1)
+abline(a=0, b=1, lty=2, lwd=0.5)
+legend("bottomright", legend=c("PLV", "PLI", "wPLI", "CCorr", "COH", "iCOH", "envCorr", "powCorr"), col=c(c1, c2, c3, c4, c5, c6, c7, c8), lty=1, cex=0.8)
+```
+
+```{r}
+mi_histogram_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "mi_histogram")
+mi_gaussian_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "mi_gaussian")
+mi_kernel_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "mi_kernel")
+mi_ksg_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "mi_ksg")
+mi_symbolic_inter_roc <- subset(df2, cinter %in% c(0.0, 1.0) & measure == "mi_symbolic")
+
+rocr_mi_histogram<- ROCR.measures(mi_histogram_inter_roc)
+rocr_mi_gaussian <- ROCR.measures(mi_gaussian_inter_roc)
+rocr_mi_kernel <- ROCR.measures(mi_kernel_inter_roc)
+rocr_mi_ksg <- ROCR.measures(mi_ksg_inter_roc)
+rocr_mi_symbolic <- ROCR.measures(mi_symbolic_inter_roc)
+
+# Save ROC results into a list for plotting
+list_allrocr <- list(rocr_mi_histogram, rocr_mi_gaussian, rocr_mi_kernel, rocr_mi_ksg, rocr_mi_symbolic)
+
+# Set colours
+c1 <- "#D55E00"  # reddish-orange
+c2 <- "#CC79A7"  # pinkish-purple
+c3 <- "#E69F00"  # mustard yellow
+c4 <- "#56B4E9"  # light blue
+c5 <- "#0072B2"  # dark blue
+
+# Plot ROC curves
+plot(list_allrocr[[1]][[1]], col=c1, lwd=2, main="Mutual Information ROC Curves") 
+plot(list_allrocr[[2]][[1]], add=TRUE, col=c2, lwd=2)
+plot(list_allrocr[[3]][[1]], add=TRUE, col=c3, lwd=2)
+plot(list_allrocr[[4]][[1]], add=TRUE, col=c4, lwd=2)
+plot(list_allrocr[[5]][[1]], add=TRUE, col=c5, lwd=2)
+abline(a=0, b=1, lty=2, lwd=0.5)
+legend("bottomright", legend=c("Histogram", "Gaussian", "Kernel", "KSG", "Symbolic"), col=c(c1, c2, c3, c4, c5), lty=1, cex=0.8)
+```
+
+```{r}
+lm_results <- lm(value ~ cinter + freq_std + phase_noise + amp_noise + sensor_noise + cluster, data = subset(df2, freq_band == "Broadband"))
+summary(lm_results)
+```
+
+```{r}
+
+lm_results <- lm(value ~ cinter + freq_std + phase_noise + amp_noise + sensor_noise + cluster, data = subset(df2, freq_band == "Broadband" & measure == "plv"))
+summary(lm_results)
+
+```
+
+```{r}
+lm_results <- lm(value ~ cinter + freq_std + phase_noise + amp_noise + sensor_noise + cluster, data = subset(df2, freq_band == "Broadband" & measure == "mi_histogram"))
+summary(lm_results)
+
+```
+
+
+```{r}
+
+create_and_save_plot <- function(data, x, y, plot_type, effsize_type, title, filename, stats_filename) {
+  plot <- ggbetweenstats(
+    data = data,
+    x = x,
+    y = y,
+    plot.type = plot_type,
+    effsize.type = effsize_type,
+    title = title,
+    results.subtitle = TRUE
+  )
+  
+  # Save the plot
+  ggsave(filename, plot = plot, width = 8, height = 6)
+  
+  # Extract statistics as text
+  stats <- plot$results
+  
+  # Save statistics to text file
+  write.table(stats, stats_filename, sep = "\t", row.names = FALSE)
+}
+
+# Create and save plots, and extract stats
+create_and_save_plot(inter_plv, "cinter", "value", "box", "eta", "IBS PLV", "standard_results/IBS_PLV.png", "standard_results/IBS_PLV_stats.txt")
+create_and_save_plot(inter_pli, "cinter", "value", "box", "eta", "IBS PLI", "standard_results/IBS_PLI.png", "standard_results/IBS_PLI_stats.txt")
+create_and_save_plot(inter_wpli, "cinter", "value", "box", "eta", "IBS wPLI", "standard_results/IBS_wPLI.png", "standard_results/IBS_wPLI_stats.txt")
+create_and_save_plot(inter_ccorr, "cinter", "value", "box", "eta", "IBS Circular Correlation", "standard_results/IBS_Circular_Correlation.png", "standard_results/IBS_Circular_Correlation_stats.txt")
+create_and_save_plot(inter_coh, "cinter", "value", "box", "eta", "IBS Coherence", "standard_results/IBS_Coherence.png", "standard_results/IBS_Coherence_stats.txt")
+create_and_save_plot(inter_imaginary_coh, "cinter", "value", "box", "eta", "IBS Imaginary Coherence", "standard_results/IBS_Imaginary_Coherence.png", "standard_results/IBS_Imaginary_Coherence_stats.txt")
+create_and_save_plot(inter_envelope_corr, "cinter", "value", "box", "eta", "IBS Envelope correlation", "standard_results/IBS_Envelope_correlation.png", "standard_results/IBS_Envelope_correlation_stats.txt")
+create_and_save_plot(inter_pow_corr, "cinter", "value", "box", "eta", "IBS Power Correlation", "standard_results/IBS_Power_Correlation.png", "standard_results/IBS_Power_Correlation_stats.txt")
+
+
+```
+
+
+
+
+
+
+
+
+
