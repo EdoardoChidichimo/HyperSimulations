@@ -1,7 +1,7 @@
 # HyperSimulations
 Simulating EEG hyperscanning data using coupled Kuramoto oscillators following stochastic delay differential dynamics and using connectome data. Benchmarking information-theoretic measures against standard connectivity measures.
 
-## Preparation and Finding Best Biophysical Model of Single-Brain Dynamics 
+## Preparation and Finding Best Phenomenological Model of Single-Brain Dynamics 
 
 A. **Brain Criticality Dynamics** (*criticality.py*)
 - Plot criticality dynamics of Kuramoto model of simulated source signals. Varying $C_{\text{intra}}$ [0,1] in 50 steps, 20 iterations, and three noise conditions (none, medium, high).
